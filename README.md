@@ -1,2 +1,2 @@
 # npcs
-networking programming in C#
+network programming in C#
