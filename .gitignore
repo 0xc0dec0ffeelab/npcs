@@ -1,0 +1,57 @@
+# Windows system generated files
+Thumbs.db
+ehthumbs.db
+
+# Visual Studio build folders
+[Dd]ebug/
+[Dd]ebugPublic/
+[Dd]ist/
+[Dd]eploy/
+
+# .NET bin and obj directories
+bin/
+obj/
+
+# Visual Studio settings folders
+.vs/
+.vscode/
+
+# Windows Installer artifacts
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Rider IDE files
+.idea/
+
+# ASP.NET Core artifacts
+wwwroot/
+
+# Visual Studio for Mac
+.vscode/
+
+# Windows environment setup files
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# .NET Core artifacts
+project.lock.json
+project.fragment.lock.json
+
+# Visual Studio Code related files
+.vscode/
+
+# JetBrains Rider
+.idea/
+
+# Test results generated
+TestResults/
+
+# Custom build files
+*.log
+*.vspscc
+*.vssscc
+
