@@ -3,58 +3,68 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks.Dataflow;
 using System;
-
+using System.Diagnostics;
 
 TcpClient? client = null;
 byte[] buffer = new byte[1024];
 
-client =await ConnectAsync(client);
+client = await ConnectAsync(client);
 
 CancellationTokenSource cts = new();
-Task receiveTask = CreateReceiveTask(client, buffer, cts.Token);
+Task receiveTask = CreateReceiveTask(client, buffer, cts);
 
 while (true)
 {
-    string? input = Console.ReadLine();
-
-    if (input?.Length == 1 && input?.ToLower() == "d") // disconnect
+    string input = Console.ReadLine() ?? string.Empty;
+    if (input.Length == 1 && input.ToLower() == "d") // disconnect
     {
-        Disconnect(client);
+        client = Disconnect(client);
         cts.Cancel();
+        Console.WriteLine($"disconnect");
     }
-    else if (input?.Length == 1 && input?.ToLower() == "r") // reconnect
+    else if (input.Length == 1 && input.ToLower() == "r") // reconnect
     {
         cts.Cancel();
         client = await ConnectAsync(client);
 
-
         cts = new CancellationTokenSource();
-        receiveTask = CreateReceiveTask(client, buffer, cts.Token);
+        receiveTask = CreateReceiveTask(client, buffer, cts);
+        Console.WriteLine($"reconnect");
     }
     else if (input.StartsWith("send")) // send message to a client
     {
-        var parts = input.Split(' ');
+        
+        var parts = input.Split(" ");
 
-        if (parts.Length == 2)
+        if (parts.Length > 1)
         {
-            string message = parts[1];
+            string message = string.Join(" ", parts.Skip(1));
             await SendMessageAsync(client, message, client.GetStream());
         }
     }
 }
 
-static Task CreateReceiveTask(TcpClient client, byte[] buffer, CancellationToken token)
+static Task CreateReceiveTask(TcpClient client, byte[] buffer, CancellationTokenSource cts)
 {
     var receiveTask = Task.Run(async () =>
     {
-        while (token.IsCancellationRequested == false)
+        while (cts.Token.IsCancellationRequested == false)
         {
-            await foreach (var message in ReceiveMessageAsync(client, buffer))
+            var message = await ReceiveMessageAsync(client, buffer, cts);
+
+            if (string.IsNullOrEmpty(message) == false)
             {
                 Console.WriteLine($"Received from server: {message}");
             }
+            else
+            {
+                // server closed
+                Console.WriteLine("server closed");
+                break;
+            }
+            
         }
-    }, token);
+    }, cts.Token);
 
     return receiveTask;
 }
@@ -64,7 +74,7 @@ static async Task SendMessageAsync(TcpClient? client, string message, NetworkStr
     await WriteMessageAsync(stream, message);
 }
 
-static async IAsyncEnumerable<string> ReceiveMessageAsync(TcpClient? client, byte[] buffer)
+static async Task<string> ReceiveMessageAsync(TcpClient? client, byte[] buffer, CancellationTokenSource cts)
 {
     ArgumentNullException.ThrowIfNull(client);
 
@@ -75,8 +85,12 @@ static async IAsyncEnumerable<string> ReceiveMessageAsync(TcpClient? client, byt
     if ((bytesRead = await bytesReadTask) > 0)
     {
         string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-        yield return message;
+        return message;
     }
+
+    client = Disconnect(client);
+    cts.Cancel();
+    return string.Empty;
 }
 
 
@@ -85,23 +99,22 @@ static async Task WriteMessageAsync(NetworkStream? stream, string message)
     if (stream == null) return;
     byte[] data = Encoding.UTF8.GetBytes(message);
     await stream.WriteAsync(data);
-    //await stream.FlushAsync();
 }
 
 static async Task<TcpClient> ConnectAsync(TcpClient? client)
 {
     if (client != null && client.Connected) return client;
-    client ??= new();
+    client = new();
     await client.ConnectAsync($"{IPAddress.Loopback}", 12345);
     return client;
 }
 
-static void Disconnect(TcpClient? client)
+static TcpClient? Disconnect(TcpClient? client)
 {
     if (client != null && client.Connected)
     {
-        Console.WriteLine("Disconnecting from server...");
+        Console.WriteLine("disconnecting from server...");
         client.Close();
     }
-    client = null;
+    return default;
 }
