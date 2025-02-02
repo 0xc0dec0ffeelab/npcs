@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
+Console.Title = "Socket Server"; // console title
 
 MyTcpListener? listener = null;
 MyConcurrentDictionary clientsDic = new();

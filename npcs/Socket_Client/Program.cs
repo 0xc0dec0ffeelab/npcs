@@ -4,6 +4,9 @@ using System.Text;
 using System.Threading.Tasks.Dataflow;
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+Console.Title = "Socket Client"; // console title
 
 TcpClient? client = null;
 byte[] buffer = new byte[1024];
