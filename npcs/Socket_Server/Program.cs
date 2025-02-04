@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+
 
 Console.Title = "Socket Server"; // console title
 
@@ -243,23 +246,23 @@ public class MyTcpClient
     {
         _tcpClient = tcpClient;
     }
- 
-    public NetworkStream GetStream() => _tcpClient.GetStream();
-    public void Close() => _tcpClient.Close();
-    public bool Connected => _tcpClient.Connected;
+    public NetworkStream GetStream() => TcpClient.GetStream();
+    public void Close() => TcpClient.Close();
+    public bool Connected => TcpClient.Connected;
 
     public bool IsSocketConnected()
     {
         try
         {
             
-            return (_tcpClient.Client.Poll(1, SelectMode.SelectRead) && _tcpClient.Client.Available == 0) == false;
+            return (TcpClient.Client.Poll(1, SelectMode.SelectRead) && TcpClient.Client.Available == 0) == false;
         }
         catch
         {
             return false;
         }
     }
+    public TcpClient TcpClient => _tcpClient;
 }
 
 public class MyConcurrentDictionary
@@ -333,7 +336,8 @@ public static class Extension
             while (token.IsCancellationRequested == false)
             {
                 var (clientId, message) = await ReceiveMessagesFromClientsAsync(client);
-                if (!string.IsNullOrEmpty(message))
+                
+                if (string.IsNullOrEmpty(message) == false)
                 {
                     Console.WriteLine($"Received from {clientId}: {message}");
                 }
@@ -357,7 +361,6 @@ public static class Extension
     }
 
     public static async Task<string> ReceiveMessageAsync(MyTcpClient? client, byte[] buffer)
-
     {
         ArgumentNullException.ThrowIfNull(client);
         int bytesRead;
@@ -379,4 +382,3 @@ public static class Extension
         await stream.WriteAsync(data);
     }
 }
-// 如果傳輸過來的字串大於1024 => 當buffer長度=1024 這樣是否會覆蓋過去原本在 buffer 的字串
